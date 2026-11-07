@@ -1,0 +1,41 @@
+{
+  "name": "resilix",
+  "version": "1.0.0",
+  "description": "A lightweight, dependency-free retry and resilience library for JavaScript and Node.js applications.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "src",
+    "index.js",
+    "index.d.ts",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "test:watch": "node --test --watch test/*.test.js"
+  },
+  "keywords": [
+    "retry",
+    "retry-logic",
+    "exponential-backoff",
+    "nodejs",
+    "javascript",
+    "async",
+    "resilience"
+  ],
+  "author": "Resilix Contributors",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}
