@@ -149,6 +149,37 @@ describe('Retry Module', () => {
       assert.deepEqual(delaysObserved, [10, 20, 40]);
     });
 
+    it('supports strategy option name as alias for backoff', async () => {
+      let callCount = 0;
+      const result = await retry(async () => {
+        callCount++;
+        if (callCount === 1) throw new Error('First try drop');
+        return 'strategy-ok';
+      }, {
+        maxRetries: 2,
+        strategy: 'fixed',
+        delay: 5,
+      });
+
+      assert.equal(result, 'strategy-ok');
+      assert.equal(callCount, 2);
+    });
+
+    it('supports initialDelay option name as alias for delay', async () => {
+      let callCount = 0;
+      const result = await retry(async () => {
+        callCount++;
+        if (callCount === 1) throw new Error('First try drop');
+        return 'initialDelay-ok';
+      }, {
+        maxRetries: 2,
+        initialDelay: 5,
+      });
+
+      assert.equal(result, 'initialDelay-ok');
+      assert.equal(callCount, 2);
+    });
+
     it('supports custom backoff delay function', async () => {
       const delaysObserved = [];
       await assert.rejects(
@@ -189,9 +220,6 @@ describe('Retry Module', () => {
         ResilixError
       );
 
-      // retry 1: 100 -> 100
-      // retry 2: 300 -> capped at 250
-      // retry 3: 900 -> capped at 250
       assert.deepEqual(delaysObserved, [100, 250, 250]);
     });
 
@@ -213,7 +241,6 @@ describe('Retry Module', () => {
         FatalAuthError
       );
 
-      // Stops after 1st attempt because error is non-retryable
       assert.equal(callCount, 1);
     });
 
@@ -249,6 +276,76 @@ describe('Retry Module', () => {
       assert.equal(events[2].hook, 'afterRetry');
     });
 
+    it('executes onSuccess hook upon successful completion', async () => {
+      let successData = null;
+      let successMeta = null;
+
+      const result = await retry(async () => {
+        return 'payload-123';
+      }, {
+        delay: 1,
+        onSuccess: (res, meta) => {
+          successData = res;
+          successMeta = meta;
+        },
+      });
+
+      assert.equal(result, 'payload-123');
+      assert.equal(successData, 'payload-123');
+      assert.equal(successMeta.attempts, 1);
+      assert.equal(successMeta.retries, 0);
+      assert.ok(typeof successMeta.elapsedMs === 'number');
+    });
+
+    it('executes onFailure hook upon exhaustion with ResilixError and metadata', async () => {
+      let failureError = null;
+      let failureMeta = null;
+
+      await assert.rejects(
+        async () => {
+          await retry(async () => {
+            throw new Error('Fatal network partition');
+          }, {
+            maxRetries: 2,
+            delay: 1,
+            onFailure: (err, meta) => {
+              failureError = err;
+              failureMeta = meta;
+            },
+          });
+        },
+        ResilixError
+      );
+
+      assert.ok(failureError instanceof ResilixError);
+      assert.equal(failureMeta.attempts, 3);
+      assert.equal(failureMeta.retries, 2);
+      assert.equal(failureMeta.errors.length, 3);
+    });
+
+    it('executes onFailure hook on non-retryable error', async () => {
+      let failureError = null;
+
+      await assert.rejects(
+        async () => {
+          await retry(async () => {
+            const err = new Error('Client 400 Bad Request');
+            err.status = 400;
+            throw err;
+          }, {
+            maxRetries: 3,
+            delay: 1,
+            onFailure: (err) => {
+              failureError = err;
+            },
+          });
+        },
+        (err) => err.status === 400
+      );
+
+      assert.equal(failureError.status, 400);
+    });
+
     it('ensures hooks throwing errors do not break retry execution', async () => {
       let callCount = 0;
       const result = await retry(async () => {
@@ -267,6 +364,9 @@ describe('Retry Module', () => {
         afterRetry: () => {
           throw new Error('Buggy hook inside afterRetry');
         },
+        onSuccess: () => {
+          throw new Error('Buggy hook inside onSuccess');
+        },
       });
 
       assert.equal(result, 'resilient');
@@ -279,7 +379,6 @@ describe('Retry Module', () => {
       const result = await retry(async () => {
         callCount++;
         if (callCount === 1) {
-          // Slow attempt that times out
           await new Promise((resolve) => setTimeout(resolve, 80));
           return 'too-late';
         }
@@ -317,98 +416,6 @@ describe('Retry Module', () => {
       );
 
       assert.ok(callCount >= 1 && callCount < 4);
-    });
-  });
-
-  describe('retrySync() - Synchronous Operations', () => {
-    it('executes successfully on the first attempt synchronously', () => {
-      let callCount = 0;
-      const result = retrySync(() => {
-        callCount++;
-        return 42;
-      });
-
-      assert.equal(result, 42);
-      assert.equal(callCount, 1);
-    });
-
-    it('retries on synchronous exceptions and recovers', () => {
-      let callCount = 0;
-      const result = retrySync(() => {
-        callCount++;
-        if (callCount < 3) {
-          throw new Error(`Sync fail ${callCount}`);
-        }
-        return 'sync-success';
-      }, { maxRetries: 3, delay: 0 });
-
-      assert.equal(result, 'sync-success');
-      assert.equal(callCount, 3);
-    });
-
-    it('throws ResilixError when synchronous retries are exhausted', () => {
-      let callCount = 0;
-      const original = new Error('Sync permanent failure');
-
-      assert.throws(
-        () => {
-          retrySync(() => {
-            callCount++;
-            throw original;
-          }, { maxRetries: 2, delay: 0, name: 'syncTask' });
-        },
-        (err) => {
-          assert.ok(err instanceof ResilixError);
-          assert.equal(err.attempts, 3);
-          assert.equal(err.retries, 2);
-          assert.equal(err.originalError, original);
-          assert.equal(err.operationName, 'syncTask');
-          return true;
-        }
-      );
-
-      assert.equal(callCount, 3);
-    });
-
-    it('throws immediately on non-retryable error in retrySync', () => {
-      let callCount = 0;
-      class NonRetryableSyncError extends Error {}
-
-      assert.throws(
-        () => {
-          retrySync(() => {
-            callCount++;
-            throw new NonRetryableSyncError('Fatal sync error');
-          }, {
-            maxRetries: 3,
-            delay: 0,
-            shouldRetry: (err) => !(err instanceof NonRetryableSyncError),
-          });
-        },
-        NonRetryableSyncError
-      );
-
-      assert.equal(callCount, 1);
-    });
-
-    it('invokes synchronous hooks safely', () => {
-      const hooksCalled = [];
-      let callCount = 0;
-
-      const result = retrySync(() => {
-        callCount++;
-        if (callCount === 1) throw new Error('Attempt 1 error');
-        return 'done';
-      }, {
-        maxRetries: 1,
-        delay: 0,
-        onRetry: () => hooksCalled.push('onRetry'),
-        beforeRetry: () => hooksCalled.push('beforeRetry'),
-        afterRetry: () => hooksCalled.push('afterRetry'),
-      });
-
-      assert.equal(result, 'done');
-      assert.deepEqual(hooksCalled, ['onRetry', 'beforeRetry', 'afterRetry']);
     });
   });
 

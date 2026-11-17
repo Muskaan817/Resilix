@@ -94,3 +94,4 @@ describe('Timeout Module', () => {
     assert.throws(() => withTimeout(async () => {}, '100'), ResilixConfigError);
   });
 });
+

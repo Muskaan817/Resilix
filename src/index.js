@@ -2,9 +2,11 @@
  * Resilix - A lightweight, dependency-free retry and resilience library for JavaScript and Node.js
  */
 
-const { retry, retrySync, shouldRetry } = require('./retry');
+const { retry } = require('./retry');
+const { retrySync } = require('./retrySync');
 const { exponentialBackoff, fixedDelay } = require('./backoff');
 const { withTimeout } = require('./timeout');
+const { shouldRetry, validateAndNormalizeOptions } = require('./validation');
 const { ResilixError, ResilixTimeoutError, ResilixConfigError } = require('./errors');
 
 module.exports = {
@@ -17,15 +19,16 @@ module.exports = {
   exponentialBackoff,
   fixedDelay,
 
-  // Conditions
+  // Conditions & validation
   shouldRetry,
+  validateAndNormalizeOptions,
 
   // Custom errors
   ResilixError,
   ResilixTimeoutError,
   ResilixConfigError,
 
-  // Default export alias for ESM / TS interoperability
+  // Default export alias for interop
   default: {
     retry,
     retrySync,
@@ -33,6 +36,7 @@ module.exports = {
     exponentialBackoff,
     fixedDelay,
     shouldRetry,
+    validateAndNormalizeOptions,
     ResilixError,
     ResilixTimeoutError,
     ResilixConfigError,

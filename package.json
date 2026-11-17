@@ -1,41 +1,48 @@
 {
   "name": "resilix",
   "version": "1.0.0",
-  "description": "A lightweight, dependency-free retry and resilience library for JavaScript and Node.js applications.",
+  "description": "A lightweight retry and resilience library for JavaScript and Node.js.",
   "main": "index.js",
-  "types": "index.d.ts",
+  "module": "index.mjs",
+  "types": "types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./index.d.ts",
-      "require": "./index.js",
-      "default": "./index.js"
-    }
+      "types": "./types/index.d.ts",
+      "import": "./index.mjs",
+      "require": "./index.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "src",
+    "types",
     "index.js",
+    "index.mjs",
     "index.d.ts",
     "LICENSE",
     "README.md"
   ],
   "scripts": {
-    "test": "node --test test/*.test.js",
-    "test:watch": "node --test --watch test/*.test.js"
+    "test": "node --test test/*.test.js test/*.test.mjs",
+    "test:watch": "node --test --watch test/*.test.js test/*.test.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "retry",
-    "retry-logic",
+    "resilience",
     "exponential-backoff",
     "nodejs",
     "javascript",
     "async",
-    "resilience"
+    "fault-tolerance",
+    "retry-logic"
   ],
   "author": "Resilix Contributors",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
   },
-  "devDependencies": {},
-  "dependencies": {}
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
 }

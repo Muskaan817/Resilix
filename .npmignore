@@ -5,3 +5,4 @@ examples/
 .github/
 coverage/
 *.tgz
+tsconfig.json
