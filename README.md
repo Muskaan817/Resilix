@@ -5,7 +5,8 @@
 [![npm version](https://img.shields.io/npm/v/resilix.svg)](https://www.npmjs.com/package/resilix)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Dependencies](https://img.shields.io/badge/dependencies-0-blue.svg)](https://github.com/resilix/resilix)
+[![CI](https://github.com/Muskaan817/Resilix/actions/workflows/ci.yml/badge.svg)](https://github.com/Muskaan817/Resilix/actions)
+[![Dependencies](https://img.shields.io/badge/dependencies-0-blue.svg)](https://github.com/Muskaan817/Resilix)
 
 Resilix gives developers automatic, robust retry logic for transient operations such as network requests, microservice RPCs, distributed database queries, and third-party API integrations. With support for exponential backoff, fixed delays, full/half jitter, per-attempt timeouts, custom retry conditions, lifecycle hooks (`onRetry`, `onSuccess`, `onFailure`), and synchronous/asynchronous execution, Resilix protects your application without bloated dependencies or complex boilerplate.
 
