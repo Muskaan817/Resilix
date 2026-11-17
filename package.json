@@ -23,8 +23,8 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node --test test/*.test.js test/*.test.mjs",
-    "test:watch": "node --test --watch test/*.test.js test/*.test.mjs",
+    "test": "node --test",
+    "test:watch": "node --test --watch",
     "typecheck": "tsc --noEmit"
   },
   "repository": {
